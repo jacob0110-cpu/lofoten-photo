@@ -110,7 +110,6 @@ var P = [
 var map,Place,markers=[],rows=[],data={},active="all",curI=0,curPh=0;
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 
-// 新增：取得天氣代碼對應的 Emoji
 function getWeatherEmoji(code) {
   if (code === 0) return "☀️ 晴天";
   if (code === 1 || code === 2 || code === 3) return "⛅ 多雲";
@@ -121,19 +120,22 @@ function getWeatherEmoji(code) {
   return "☁️";
 }
 
-// 新增：呼叫 Open-Meteo 免費天氣 API
+// 修改：加入 daily=sunrise,sunset 並設定時區為 Europe/Oslo
 async function fetchWeather(lat, lng) {
   try {
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`);
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&daily=sunrise,sunset&timezone=Europe%2FOslo`);
     const data = await res.json();
-    if (data.current_weather) {
+    if (data.current_weather && data.daily) {
       const w = data.current_weather;
-      return `${getWeatherEmoji(w.weathercode)} · 氣溫 ${w.temperature}°C · 風速 ${w.windspeed} km/h`;
+      // 提取日出日落時間字串 (格式為 YYYY-MM-DDTHH:MM)
+      const sunrise = data.daily.sunrise[0] ? data.daily.sunrise[0].split("T")[1] : "--:--";
+      const sunset = data.daily.sunset[0] ? data.daily.sunset[0].split("T")[1] : "--:--";
+      return `${getWeatherEmoji(w.weathercode)} · 氣溫 ${w.temperature}°C · 風速 ${w.windspeed} km/h\n🌅 日出 ${sunrise} · 🌇 日落 ${sunset}`;
     }
   } catch (e) {
-    console.warn("天氣讀取失敗", e);
+    console.warn("天氣與日出落讀取失敗", e);
   }
-  return "無法取得即時天氣";
+  return "無法取得即時天氣與日出落";
 }
 
 async function loadFull(i){
@@ -163,7 +165,6 @@ function buildList(){
   });
 }
 
-// 智慧縮圖載入機制
 async function fillRow(i){
   var d=await loadFull(i), r=rows[i], th=r.querySelector(".thumb"), m=r.querySelector(".m");
   
@@ -205,16 +206,13 @@ async function openDetail(i){
   markers.forEach(function(m,j){m.content.classList.toggle("sel",j===i)});
   document.getElementById("pcount").textContent=(i+1)+" / "+P.length;
   
-  // 先呈現載入中的基本框架
   renderDetailShell(i);
   
-  // 同步並發讀取「Google地圖詳細資訊」與「即時天氣」，加速載入體驗
   var [d, weatherStr] = await Promise.all([
     loadFull(i),
     fetchWeather(P[i].lat, P[i].lng)
   ]);
   
-  // 將兩者一起更新到畫面上
   renderDetailFull(i, d, weatherStr);
 }
 
@@ -224,11 +222,10 @@ function renderDetailShell(i){
   document.getElementById("dots").innerHTML="";
   document.querySelector(".placeholder-text").textContent = "照片載入中...";
   document.querySelector(".placeholder-text").style.display = "block";
-  // 增加天氣預留區塊
   document.getElementById("dbody").innerHTML=
     '<div class="t">'+esc(p.name)+'</div>'+
     '<div class="m">'+DAYS[p.day]+' · 景點資訊載入中…</div>'+
-    '<div class="m" style="color:var(--accent);">天氣資料讀取中…</div>';
+    '<div class="m" style="color:var(--accent); font-weight:600; margin-top:-6px; margin-bottom:12px; white-space:pre-wrap; line-height:1.5;">天氣與日落讀取中…</div>';
 }
 
 function renderDetailFull(i, d, weatherStr){
@@ -244,7 +241,6 @@ function renderDetailFull(i, d, weatherStr){
 
   var placeholder = document.querySelector(".placeholder-text");
   
-  // 將有效照片插入 DOM
   function buildCar(localUrl) {
      var arr = localUrl ? [localUrl].concat(gPhotos) : gPhotos;
      if(arr.length){
@@ -267,7 +263,6 @@ function renderDetailFull(i, d, weatherStr){
      }
   }
 
-  // 智慧大圖載入機制
   if (p.photo) {
     var t1 = new Image();
     t1.onload = function(){ if(i===curI) buildCar(p.photo); };
@@ -290,11 +285,11 @@ function renderDetailFull(i, d, weatherStr){
   var customLinkBtn = p.link ? '<a class="link-btn" href="'+p.link+'" target="_blank" rel="noopener">'+esc(p.linkText || '相關連結')+'</a>' : "";
   var fullDesc = p.detail || p.shortDesc;
 
-  // 顯示天氣資訊在景點說明上方
+  // 使用 white-space:pre-wrap 讓文字中的 \n 能夠自動斷行
   document.getElementById("dbody").innerHTML=
     '<div class="t">'+esc(p.name)+'</div>'+
     '<div class="m">'+esc(meta.join(" · "))+'</div>'+
-    '<div class="m" style="color:var(--accent); font-weight:600; margin-top:-6px; margin-bottom:12px;">'+esc(weatherStr)+'</div>'+
+    '<div class="m" style="color:var(--accent); font-weight:600; margin-top:-6px; margin-bottom:12px; white-space:pre-wrap; line-height:1.5;">'+esc(weatherStr)+'</div>'+
     '<div class="btnrow"><a href="'+dirUrl+'" target="_blank" rel="noopener">路線</a><a class="sec" href="'+mapsUrl+'" target="_blank" rel="noopener">地圖開啟</a>'+siteBtn+customLinkBtn+'</div>'+
     '<div class="lbl">拍攝重點與說明</div><div class="d">'+esc(fullDesc)+'</div>';
 }
