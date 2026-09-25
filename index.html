@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>羅浮敦島最佳拍照景點</title>
+<style>
+:root{--panel:#1f2023f2;--text:#ececf1;--sub:#9aa0a6;--line:#3c4043;--hi:#33353a;--accent:#8ab4f8}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif}
+#map{position:absolute;inset:0}
+#panel{position:absolute;top:16px;right:16px;bottom:16px;width:400px;max-width:calc(100vw - 32px);background:var(--panel);backdrop-filter:blur(6px);color:var(--text);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 4px 24px rgba(0,0,0,.35)}
+.badge{background:var(--c,#000);color:#fff;font-size:.74rem;font-weight:700;padding:4px 10px;border-radius:999px;border:2px solid #fff;white-space:nowrap;cursor:pointer;box-shadow:0 1px 4px #0006}
+.badge.sel{background:#fff;color:var(--c);border-color:var(--c);transform:scale(1.15)}
+#lhead{padding:16px 16px 8px;flex:none}
+#lhead h1{font-size:1.15rem;margin:0 0 10px;font-weight:600}
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.filters button{border:1px solid var(--line);background:#0000;color:var(--text);border-radius:999px;padding:4px 11px;cursor:pointer;font-size:.78rem}
+.filters button.on{color:#fff;background:var(--c,#555);border-color:transparent}
+.filters button i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:5px}
+.filters button.on i{background:#fff}
+#listview{display:flex;flex-direction:column;flex:1;min-height:0}
+#list{flex:1;min-height:0;overflow-y:auto;padding:4px 8px 12px}
+.row{display:flex;gap:10px;padding:8px;border-radius:10px;cursor:pointer}
+.row:hover{background:var(--hi)}
+.thumb{width:72px;height:72px;flex:none;border-radius:8px;background:var(--c,#444) center/cover no-repeat}
+.rinfo .m b{color:var(--c)}
+.rinfo{min-width:0}
+.rinfo .t{font-weight:600;font-size:.88rem;margin-bottom:1px}
+.rinfo .m{color:var(--sub);font-size:.74rem;margin-bottom:2px}
+.rinfo .d{color:var(--sub);font-size:.76rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#detail{display:none;flex-direction:column;flex:1;min-height:0}
+.car{position:relative;height:220px;background:var(--hi);flex:none;display:flex;align-items:center;justify-content:center;color:var(--sub)}
+.car img{width:100%;height:100%;object-fit:cover;display:none;position:absolute;top:0;left:0}
+.car img.on{display:block}
+.car .x{position:absolute;top:10px;right:10px;background:#000a;color:#fff;border:0;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;z-index:10}
+.car .nav{position:absolute;top:50%;transform:translateY(-50%);background:#0007;color:#fff;border:0;width:30px;height:30px;border-radius:50%;cursor:pointer;z-index:10}
+.car .prev{left:8px}.car .next{right:8px}
+.dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:5px;z-index:10}
+.dots span{width:6px;height:6px;border-radius:50%;background:#fff6;cursor:pointer}
+.dots span.on{background:#fff}
+#dbody{padding:14px 16px;overflow-y:auto;flex:1}
+#dbody .t{font-size:1.05rem;font-weight:700;margin-bottom:3px}
+#dbody .m{color:var(--sub);font-size:.82rem;margin-bottom:10px}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.btnrow a{background:var(--accent);color:#111;font-weight:600;text-decoration:none;padding:8px 16px;border-radius:20px;font-size:.85rem}
+.btnrow a.sec{background:var(--hi);color:var(--text)}
+.btnrow a.link-btn{background:#4285f4;color:#fff}
+.lbl{color:var(--sub);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;margin:10px 0 4px}
+#dbody .d{font-size:.9rem;line-height:1.6;color:#e8eaed}
+#dfoot{flex:none;border-top:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;font-size:.8rem;color:var(--sub)}
+#dfoot button{background:none;border:0;color:var(--text);cursor:pointer;font-size:1.1rem;padding:2px 8px}
+.attr{padding:8px 16px;font-size:.7rem;color:var(--sub);text-align:right;flex:none}
+#err{display:none;padding:16px;color:#f28b82;position:relative;z-index:2}
+@media (max-width:760px){#panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:none;height:55%;border-radius:16px 16px 0 0}}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="panel">
+  <div id="listview">
+    <div id="lhead"><h1>羅浮敦島最佳拍照景點</h1><div class="filters" id="filters"></div></div>
+    <div id="list"></div>
+  </div>
+  <div id="detail">
+    <div class="car" id="car">
+      <span class="placeholder-text">照片載入中...</span>
+      <button class="x" onclick="closeDetail()">✕</button>
+      <button class="nav prev" onclick="shiftPhoto(-1)">‹</button>
+      <button class="nav next" onclick="shiftPhoto(1)">›</button>
+      <div class="dots" id="dots"></div>
+    </div>
+    <div id="dbody"></div>
+    <div id="dfoot">
+      <button onclick="shiftPlace(-1)">←</button>
+      <span id="pcount"></span>
+      <button onclick="shiftPlace(1)">→</button>
+    </div>
+    <div class="attr">地圖資料 © Google</div>
+  </div>
+</div>
+<div id="err"></div>
+<script>
+var API_KEY = "AIzaSyCmvtjSbkw19Opn37PfA--GzqJOcZkpBck";
+var DAYS={"4":"Day 4(10/15)","5":"Day 5(10/16)","6":"Day 6(10/17)","7":"Day 7(10/18)","8":"Day 8–9(10/19–10/20)"};
+var COL={"4":"#e6194b","5":"#f58231","6":"#3cb44b","7":"#4363d8","8":"#911eb4"};
+
+var P = [
+  { day: "4", name: "Moskenes", lat: 67.8999, lng: 13.0439, place_id: "ChIJAQBkX0U73kURSrOzGb6Ypxg", shortDesc: "渡輪靠岸前後可拍羅弗敦山壁,傍晚光線好", detail: "Moskenes 是許多旅客抵達羅浮敦的第一站。除了搭船，碼頭周圍的海景與陡峭山壁本身就是極佳的攝影題材。建議在日出或日落時分拍攝，金黃色的光線打在山壁上會充滿魔幻色彩。", photo: "moskenes.jpg", link: "https://www.visitnorway.com/places-to-go/northern-norway/the-lofoten-islands/", linkText: "羅浮敦旅遊指南" },
+  { day: "5", name: "Å", lat: 67.8806, lng: 12.9826, place_id: "ChIJm3jvOdAk3kURV6Zsa3nQHc4", shortDesc: "E10 終點的紅色漁屋與鱈魚乾架", photo: "a-village.jpg" },
+  { day: "5", name: "Reinebringen", lat: 67.9269, lng: 13.0778, place_id: "ChIJOTzpCLw83kUR6eRmNz6f8cs", shortDesc: "俯瞰 Reine 經典角度,約 2000 階,禁飛無人機", photo: "reinebringen.jpg" },
+  { day: "5", name: "Reine", lat: 67.9300, lng: 13.0821, place_id: "ChIJ5Qpx6uM93kURGgLCjayg8NY", shortDesc: "橋上拍漁村全景,日落與極光皆佳", photo: "reine.jpg" },
+  { day: "5", name: "Sakrisøy", lat: 67.9415, lng: 13.1117, place_id: "ChIJTU9Tir883kURPH7SDS6P_e4", shortDesc: "路邊停車拍黃色 rorbuer 與山景", photo: "sakrisoy.jpg" },
+  { day: "5", name: "Hamnøy", lat: 67.9468, lng: 13.1322, place_id: "ChIJUYzAavs83kURs59I-uCOWa8", shortDesc: "羅弗敦最經典的明信片角度", photo: "hamnoy.jpg" },
+  { day: "5", name: "Kvalvika", lat: 68.0774, lng: 13.0983, place_id: "ChIJl344A8IZ3kURxA2fvujLi6k", shortDesc: "來回約 3–4 小時,時間不足可略過", photo: "kvalvika.jpg" },
+  { day: "6", name: "Nusfjord", lat: 68.0353, lng: 13.3478, place_id: "ChIJQV50QC0U3kUR1MiXPZGK7vU", shortDesc: "保存完好的古老漁村,需門票", photo: "nusfjord.jpg" },
+  { day: "6", name: "Ballstad", lat: 68.0756, lng: 13.5481, place_id: "ChIJbaASMVoT3kURwNL56AUcULA", shortDesc: "住宿區,港口紅屋與夕陽", photo: "ballstad.jpg" },
+  { day: "6", name: "Haukland", lat: 68.1986, lng: 13.5287, place_id: "ChIJ44betaUN3kURm1SL2ymjb8E", shortDesc: "白沙、綠水與雪山", photo: "haukland.jpg" },
+  { day: "6", name: "Uttakleiv", lat: 68.2110, lng: 13.5051, place_id: "ChIJqS_pxrUN3kURbg-fENc-Bh0", shortDesc: "極光與日落熱門點,鄰近 Haukland", photo: "uttakleiv.jpg" },
+  { day: "6", name: "Eggum", lat: 68.3075, lng: 13.6845, place_id: "ChIJnVmBjvwK3kURsBeRvbGj-bU", shortDesc: "海岸岩景與 Head 雕塑,人較少", photo: "eggum.jpg" },
+  { day: "7", name: "Svolværgeita", lat: 68.2461, lng: 14.5883, place_id: "ChIJO6fzcg2A3kURTyOPY9lF3TU", shortDesc: "市區背後的象徵山峰,可從鎮上遠拍", photo: "svolvaergeita.jpg" },
+  { day: "7", name: "Svolvær", lat: 68.2308, lng: 14.5659, place_id: "ChIJ0QYminmA3kURx3Ok2YUTrDU", shortDesc: "漁船配山羊峰背景,Havila 停靠港", photo: "svolvaer.jpg" },
+  { day: "8", name: "Arctic Cathedral", lat: 69.6480, lng: 18.9875, place_id: "ChIJmbtJ2eTExEUR9NPM6eTI9ro", shortDesc: "夜間打燈搭配極光很受歡迎", detail: "特羅姆瑟的地標建築，外觀設計靈感來自於挪威北部的自然景觀。晚上教堂會點燈，如果運氣好，可以將教堂與上方的極光一同捕捉入鏡。", photo: "arctic-cathedral.jpg", link: "https://www.ishavskatedralen.no/en/", linkText: "北極教堂官網" },
+  { day: "8", name: "Fjellheisen", lat: 69.6411, lng: 18.9862, place_id: "ChIJA2jN5QPFxEURnVQhTDxPjEw", shortDesc: "俯瞰市區與峽灣夜景/極光", photo: "fjellheisen.jpg" },
+  { day: "8", name: "Tromsø Bridge", lat: 69.6519, lng: 18.9755, place_id: "ChIJ1Z8CiVXExEUReWPdLcHPcBg", shortDesc: "可拍教堂與市區,風大要保暖", photo: "tromso-bridge.jpg" },
+  { day: "8", name: "Polaria", lat: 69.6437, lng: 18.9498, place_id: "ChIJIdIBgK7FxEURf87H4J5p7Mc", shortDesc: "雨天備案,可看海豹餵食", photo: "polaria.jpg" },
+  { day: "8", name: "Ersfjordbotn", lat: 69.6942, lng: 18.6204, place_id: "ChIJbaUNZoi4xEUR-OE_hHIqo9c", shortDesc: "離市區約 30 分鐘,光害低的極光點", photo: "ersfjordbotn.jpg" }
+];
+
+var map,Place,markers=[],rows=[],data={},active="all",curI=0,curPh=0;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+// 新增：取得天氣代碼對應的 Emoji
+function getWeatherEmoji(code) {
+  if (code === 0) return "☀️ 晴天";
+  if (code === 1 || code === 2 || code === 3) return "⛅ 多雲";
+  if (code === 45 || code === 48) return "🌫️ 起霧";
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return "🌧️ 降雨";
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "❄️ 下雪";
+  if (code >= 95) return "⛈️ 雷雨";
+  return "☁️";
+}
+
+// 新增：呼叫 Open-Meteo 免費天氣 API
+async function fetchWeather(lat, lng) {
+  try {
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`);
+    const data = await res.json();
+    if (data.current_weather) {
+      const w = data.current_weather;
+      return `${getWeatherEmoji(w.weathercode)} · 氣溫 ${w.temperature}°C · 風速 ${w.windspeed} km/h`;
+    }
+  } catch (e) {
+    console.warn("天氣讀取失敗", e);
+  }
+  return "無法取得即時天氣";
+}
+
+async function loadFull(i){
+  if(data[i]) return data[i];
+  data[i]=(async function(){
+    try{
+      var pl=new Place({id:P[i].place_id});
+      await pl.fetchFields({fields:["rating","userRatingCount","photos","primaryTypeDisplayName","websiteURI"]});
+      return{rating:pl.rating,n:pl.userRatingCount,type:pl.primaryTypeDisplayName,photos:(pl.photos||[]).slice(0,5),site:pl.websiteURI};
+    }catch(e){console.warn("Places 讀取失敗",P[i].name,e);return{}}
+  })();
+  return data[i];
+}
+
+function buildFilters(){
+  var f=document.getElementById("filters");
+  function btn(k,l){var b=document.createElement("button");b.innerHTML=(k==="all"?"":"<i></i>")+l;b.dataset.k=k;b.style.setProperty("--c",k==="all"?"#555":COL[k]);b.onclick=function(){setFilter(k)};f.appendChild(b)}
+  btn("all","全部");Object.keys(DAYS).forEach(function(k){btn(k,DAYS[k])});
+}
+function buildList(){
+  var l=document.getElementById("list");
+  P.forEach(function(p,i){
+    var r=document.createElement("div");r.className="row";r.dataset.i=i;
+    r.style.setProperty("--c",COL[p.day]);
+    r.innerHTML='<div class="thumb"></div><div class="rinfo"><div class="t">'+esc(p.name)+'</div><div class="m"><b>'+DAYS[p.day]+'</b></div><div class="d">'+esc(p.shortDesc)+'</div></div>';
+    r.onclick=function(){openDetail(i)};l.appendChild(r);rows.push(r);
+  });
+}
+
+// 智慧縮圖載入機制
+async function fillRow(i){
+  var d=await loadFull(i), r=rows[i], th=r.querySelector(".thumb"), m=r.querySelector(".m");
+  
+  if(P[i].photo) {
+    var img = new Image();
+    img.onload = function() { th.style.backgroundImage = 'url("' + P[i].photo + '")'; };
+    img.onerror = function() {
+      var img2 = new Image();
+      img2.onload = function() { th.style.backgroundImage = 'url("' + P[i].photo.replace('.jpg', '.JPG') + '")'; };
+      img2.onerror = function() {
+        if(d.photos && d.photos[0]) { th.style.backgroundImage = 'url("'+d.photos[0].getURI({maxWidth:160})+'")'; }
+      };
+      img2.src = P[i].photo.replace('.jpg', '.JPG');
+    };
+    img.src = P[i].photo;
+  } else if(d.photos && d.photos[0]){
+    th.style.backgroundImage='url("'+d.photos[0].getURI({maxWidth:160})+'")';
+  }
+  
+  var extra=[];if(d.rating)extra.push("★ "+d.rating.toFixed(1)+(d.n?" ("+d.n.toLocaleString()+")":""));if(d.type)extra.push(d.type);
+  m.innerHTML='<b>'+DAYS[P[i].day]+'</b>'+(extra.length?' · '+esc(extra.join(" · ")):"");
+  if(markers[i]&&d.rating)markers[i].content.textContent=d.rating.toFixed(1);
+}
+
+function setFilter(k){
+  active=k;var b=new google.maps.LatLngBounds();
+  P.forEach(function(p,i){var s=k==="all"||p.day===k;rows[i].style.display=s?"":"none";markers[i].map=s?map:null;if(s)b.extend(markers[i].position)});
+  map.fitBounds(b,60);if(k!=="all"&&map.getZoom()>11)map.setZoom(11);
+  Array.prototype.forEach.call(document.getElementById("filters").children,function(x){var on=x.dataset.k===k;x.classList.toggle("on",on)});
+}
+
+function showList(){document.getElementById("listview").style.display="";document.getElementById("detail").style.display="none"}
+function showDetailView(){document.getElementById("listview").style.display="none";document.getElementById("detail").style.display="flex"}
+function closeDetail(){showList();markers.forEach(function(m){m.content.classList.remove("sel")})}
+
+async function openDetail(i){
+  curI=i;curPh=0;showDetailView();
+  map.panTo(markers[i].position);if(map.getZoom()<12)map.setZoom(12);
+  markers.forEach(function(m,j){m.content.classList.toggle("sel",j===i)});
+  document.getElementById("pcount").textContent=(i+1)+" / "+P.length;
+  
+  // 先呈現載入中的基本框架
+  renderDetailShell(i);
+  
+  // 同步並發讀取「Google地圖詳細資訊」與「即時天氣」，加速載入體驗
+  var [d, weatherStr] = await Promise.all([
+    loadFull(i),
+    fetchWeather(P[i].lat, P[i].lng)
+  ]);
+  
+  // 將兩者一起更新到畫面上
+  renderDetailFull(i, d, weatherStr);
+}
+
+function renderDetailShell(i){
+  var p=P[i];
+  document.getElementById("car").querySelectorAll("img").forEach(function(x){x.remove()});
+  document.getElementById("dots").innerHTML="";
+  document.querySelector(".placeholder-text").textContent = "照片載入中...";
+  document.querySelector(".placeholder-text").style.display = "block";
+  // 增加天氣預留區塊
+  document.getElementById("dbody").innerHTML=
+    '<div class="t">'+esc(p.name)+'</div>'+
+    '<div class="m">'+DAYS[p.day]+' · 景點資訊載入中…</div>'+
+    '<div class="m" style="color:var(--accent);">天氣資料讀取中…</div>';
+}
+
+function renderDetailFull(i, d, weatherStr){
+  if(i!==curI)return;
+  var p=P[i];
+  var car=document.getElementById("car"),dots=document.getElementById("dots");
+  car.querySelectorAll("img").forEach(function(x){x.remove()});dots.innerHTML="";
+  
+  var gPhotos = [];
+  (d.photos||[]).forEach(function(ph){ 
+    try { gPhotos.push(ph.getURI({maxWidth:480})); } catch(e){} 
+  });
+
+  var placeholder = document.querySelector(".placeholder-text");
+  
+  // 將有效照片插入 DOM
+  function buildCar(localUrl) {
+     var arr = localUrl ? [localUrl].concat(gPhotos) : gPhotos;
+     if(arr.length){
+        placeholder.style.display = "none";
+        var closeBtn = car.querySelector('.x');
+        arr.forEach(function(u,k){
+          var img=document.createElement("img");
+          img.src=u;
+          img.onerror = function() { this.style.display = 'none'; };
+          if(k===0) img.className="on";
+          car.insertBefore(img, closeBtn); 
+          var dt=document.createElement("span");
+          if(k===0) dt.className="on";
+          dt.onclick=function(){setPhoto(k)};
+          dots.appendChild(dt);
+        });
+     } else {
+        placeholder.textContent = "無照片資料";
+        placeholder.style.display = "block";
+     }
+  }
+
+  // 智慧大圖載入機制
+  if (p.photo) {
+    var t1 = new Image();
+    t1.onload = function(){ if(i===curI) buildCar(p.photo); };
+    t1.onerror = function(){
+       var t2 = new Image();
+       t2.onload = function(){ if(i===curI) buildCar(p.photo.replace('.jpg', '.JPG')); };
+       t2.onerror = function(){ if(i===curI) buildCar(null); }; 
+       t2.src = p.photo.replace('.jpg', '.JPG');
+    };
+    t1.src = p.photo;
+  } else {
+    buildCar(null);
+  }
+  
+  var meta=[DAYS[p.day]];if(d.rating)meta.push("★ "+d.rating.toFixed(1)+(d.n?" ("+d.n.toLocaleString()+")":""));if(d.type)meta.push(d.type);
+  var mapsUrl="https://www.google.com/maps/search/?api=1&query="+p.lat+","+p.lng;
+  var dirUrl="https://www.google.com/maps/dir/?api=1&destination="+p.lat+","+p.lng;
+  
+  var siteBtn = d.site ? '<a class="sec" href="'+d.site+'" target="_blank" rel="noopener">商家網站</a>' : "";
+  var customLinkBtn = p.link ? '<a class="link-btn" href="'+p.link+'" target="_blank" rel="noopener">'+esc(p.linkText || '相關連結')+'</a>' : "";
+  var fullDesc = p.detail || p.shortDesc;
+
+  // 顯示天氣資訊在景點說明上方
+  document.getElementById("dbody").innerHTML=
+    '<div class="t">'+esc(p.name)+'</div>'+
+    '<div class="m">'+esc(meta.join(" · "))+'</div>'+
+    '<div class="m" style="color:var(--accent); font-weight:600; margin-top:-6px; margin-bottom:12px;">'+esc(weatherStr)+'</div>'+
+    '<div class="btnrow"><a href="'+dirUrl+'" target="_blank" rel="noopener">路線</a><a class="sec" href="'+mapsUrl+'" target="_blank" rel="noopener">地圖開啟</a>'+siteBtn+customLinkBtn+'</div>'+
+    '<div class="lbl">拍攝重點與說明</div><div class="d">'+esc(fullDesc)+'</div>';
+}
+
+function setPhoto(k){
+  var car=document.getElementById("car");
+  car.querySelectorAll("img").forEach(function(im,j){im.classList.toggle("on",j===k)});
+  document.getElementById("dots").querySelectorAll("span").forEach(function(dt,j){dt.classList.toggle("on",j===k)});
+  curPh=k;
+}
+function shiftPhoto(dir){
+  var imgs=document.getElementById("car").querySelectorAll("img");if(!imgs.length)return;
+  setPhoto((curPh+dir+imgs.length)%imgs.length);
+}
+function shiftPlace(dir){var n=(curI+dir+P.length)%P.length;openDetail(n)}
+
+async function initMap(){
+  const {Map}=await google.maps.importLibrary("maps");
+  const {AdvancedMarkerElement}=await google.maps.importLibrary("marker");
+  ({Place}=await google.maps.importLibrary("places"));
+  map=new Map(document.getElementById("map"),{center:{lat:68.6,lng:15.5},zoom:6,mapId:"DEMO_MAP_ID",colorScheme:"FOLLOW_SYSTEM",mapTypeControl:true});
+  buildFilters();buildList();
+  P.forEach(function(p,i){
+    var el=document.createElement("div");el.className="badge";el.textContent="–";el.style.setProperty("--c",COL[p.day]);el.onclick=function(){openDetail(i)};
+    var m=new AdvancedMarkerElement({map:map,position:{lat:p.lat,lng:p.lng},title:p.name,content:el});
+    markers.push(m);
+  });
+  P.forEach(function(p,i){fillRow(i)});
+  setFilter("all");
+}
+(function(){
+  if(!API_KEY||API_KEY==="YOUR_API_KEY"){var e=document.getElementById("err");e.style.display="block";e.textContent="請先設定 API_KEY。";return}
+  window.initMap=initMap;var s=document.createElement("script");
+  s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(API_KEY)+"&loading=async&callback=initMap&language=zh-TW&v=weekly";
+  s.async=true;document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
