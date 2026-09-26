@@ -12,10 +12,13 @@ html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Pin
 /* Layout & Views */
 .view { position: absolute; top: 0; left: 0; right: 0; bottom: var(--nav-h); overflow-y: auto; display: none; background: var(--bg); color: var(--text); }
 .view.active { display: block; }
-#view-map.active { display: block; background: transparent; }
+
+/* 地圖外層允許事件穿透至底層 Google Maps */
+#view-map { display: none; }
+#view-map.active { display: block; background: transparent; pointer-events: none; }
 
 /* Bottom Navigation */
-.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-h); background: #1a1a1dbf; backdrop-filter: blur(10px); border-top: 1px solid var(--line); display: flex; justify-content: space-around; align-items: center; z-index: 9999; padding-bottom: env(safe-area-inset-bottom); }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-h); background: #1a1a1dbf; backdrop-filter: blur(10px); border-top: 1px solid var(--line); display: flex; justify-content: space-around; align-items: center; z-index: 9999; padding-bottom: env(safe-area-inset-bottom); pointer-events: auto; }
 .nav-btn { background: none; border: none; color: var(--sub); font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; flex: 1; padding: 10px 0; transition: color 0.2s; }
 .nav-btn i { font-size: 1.2rem; font-style: normal; }
 .nav-btn.active { color: var(--accent); font-weight: 600; }
@@ -23,7 +26,7 @@ html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Pin
 /* Map View Styles */
 #map { position: absolute; inset: 0; z-index: 0; }
 
-/* 可自由拖曳的浮動面板 */
+/* 可自由拖曳的浮動面板，恢復滑鼠與觸控事件響應 */
 #panel { 
   position: absolute; 
   top: 16px; 
@@ -41,9 +44,10 @@ html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Pin
   box-shadow: 0 8px 32px rgba(0,0,0,.5); 
   z-index: 10; 
   border: 1px solid rgba(255,255,255,0.1);
+  pointer-events: auto;
 }
 
-/* 拖曳把手區域 (列表標題 & 詳細照片區上方) */
+/* 拖曳把手區域 */
 .drag-handle { 
   cursor: grab; 
   user-select: none; 
@@ -147,7 +151,7 @@ html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Pin
       <div id="list"></div>
     </div>
     <div id="detail">
-      <!-- 詳細模式的拖曳把手（相簿區上方） -->
+      <!-- 詳細模式的拖曳把手 -->
       <div class="car drag-handle" id="car" title="按住此處可拖曳視窗">
         <span class="placeholder-text">照片載入中...</span>
         <button class="x" onclick="closeDetail()">✕</button>
@@ -287,14 +291,13 @@ function switchTab(tabId) {
   document.getElementById('view-' + tabId).classList.add('active');
 }
 
-// --- 視窗自由拖曳移動機制 (支援滑鼠與手機觸控) ---
+// 自由拖曳面板機制
 (function initDraggablePanel() {
   const panel = document.getElementById('panel');
   let isDragging = false;
   let startX, startY, initialLeft, initialTop;
 
   function dragStart(e) {
-    // 確保點擊的是拖曳把手（標題列或照片區），而不是按鈕或捲軸
     if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.filters') || e.target.closest('#list') || e.target.closest('#dbody')) return;
     
     isDragging = true;
@@ -308,7 +311,6 @@ function switchTab(tabId) {
     initialLeft = rect.left;
     initialTop = rect.top;
     
-    // 切換為絕對座標定位，方便自由拖動
     panel.style.left = initialLeft + 'px';
     panel.style.top = initialTop + 'px';
     panel.style.right = 'auto';
@@ -342,7 +344,6 @@ function switchTab(tabId) {
     document.removeEventListener('touchend', dragEnd);
   }
 
-  // 綁定到所有設定為拖曳把手的元素
   document.querySelectorAll('.drag-handle').forEach(handle => {
     handle.addEventListener('mousedown', dragStart);
     handle.addEventListener('touchstart', dragStart, { passive: false });
@@ -610,7 +611,19 @@ async function initMap(){
   const {Map}=await google.maps.importLibrary("maps");
   const {AdvancedMarkerElement}=await google.maps.importLibrary("marker");
   ({Place}=await google.maps.importLibrary("places"));
-  map=new Map(document.getElementById("map"),{center:{lat:68.6,lng:15.5},zoom:6,mapId:"DEMO_MAP_ID",colorScheme:"FOLLOW_SYSTEM",mapTypeControl:true});
+  
+  // 開放完整縮放手勢：支援雙指縮放、滾輪無阻礙縮放與拖曳
+  map = new Map(document.getElementById("map"),{
+    center: {lat: 68.6, lng: 15.5},
+    zoom: 6,
+    mapId: "DEMO_MAP_ID",
+    colorScheme: "FOLLOW_SYSTEM",
+    mapTypeControl: true,
+    gestureHandling: "greedy",
+    zoomControl: true,
+    scrollwheel: true
+  });
+  
   buildFilters();buildList();
   P.forEach(function(p,i){
     var el=document.createElement("div");el.className="badge";el.textContent="–";el.style.setProperty("--c",COL[p.day]);el.onclick=function(){openDetail(i)};
@@ -620,6 +633,7 @@ async function initMap(){
   P.forEach(function(p,i){fillRow(i)});
   setFilter("all");
 }
+
 (function(){
   if(!API_KEY||API_KEY==="YOUR_API_KEY"){var e=document.getElementById("err");e.style.display="block";e.textContent="請先設定 API_KEY。";return}
   window.initMap=initMap;var s=document.createElement("script");
