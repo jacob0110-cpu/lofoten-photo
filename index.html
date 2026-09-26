@@ -290,30 +290,26 @@ function getKpDescription(kp) {
 
 var cachedKp = null;
 var kpFetchTime = 0;
-// 絕對不會崩潰的 Kp 抓取函式（內建安全保底）
+// 使用 swpc.noaa.gov 的純文字 RSS/JSON 接口（完全支援 HTTPS 跨域）
 async function fetchKpIndex() {
   const now = Date.now();
   if (cachedKp !== null && now - kpFetchTime < 300000) return cachedKp; 
   try {
-    const targetUrl = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json";
-    const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(targetUrl);
-    const res = await fetch(proxyUrl);
-    if (res.ok) {
-      const json = await res.json();
-      const data = JSON.parse(json.contents);
-      for(let i = data.length - 1; i >= 1; i--) {
-          const kpVal = parseFloat(data[i][1]);
-          if(!isNaN(kpVal)) {
-              cachedKp = kpVal;
-              kpFetchTime = now;
-              return kpVal;
-          }
-      }
+    const res = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
+    if (!res.ok) throw new Error("API 回應異常");
+    const data = await res.json();
+    for(let i = data.length - 1; i >= 1; i--) {
+        const kpVal = parseFloat(data[i][1]);
+        if(!isNaN(kpVal)) {
+            cachedKp = kpVal;
+            kpFetchTime = now;
+            return kpVal;
+        }
     }
   } catch (e) {
-    console.warn("Kp 代理讀取失敗，使用預設值", e);
+    console.warn("Kp 讀取失敗，使用預設值", e);
   }
-  return 2.5; // 保底回傳 2.5 級，保證畫面永遠有數字
+  return 2.5; // 保底回傳 2.5 級，保證 GitHub 絕不破圖
 }
 
 async function fetchWeather(lat, lng) {
