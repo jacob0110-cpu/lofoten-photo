@@ -22,13 +22,54 @@ html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Pin
 
 /* Map View Styles */
 #map { position: absolute; inset: 0; z-index: 0; }
-#panel { position: absolute; top: 16px; right: 16px; bottom: 16px; width: 400px; max-width: calc(100vw - 32px); background: var(--panel); backdrop-filter: blur(8px); color: var(--text); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 24px rgba(0,0,0,.4); z-index: 10; }
-@media (max-width:760px){#panel{top: auto; bottom: 16px; left: 16px; right: 16px; width: auto; max-width: none; height: 50%; border-radius: 16px;}}
+
+/* 可自由拖曳的浮動面板 */
+#panel { 
+  position: absolute; 
+  top: 16px; 
+  right: 16px; 
+  width: 400px; 
+  height: calc(100vh - 95px); 
+  max-width: calc(100vw - 32px); 
+  background: var(--panel); 
+  backdrop-filter: blur(8px); 
+  color: var(--text); 
+  border-radius: 16px; 
+  overflow: hidden; 
+  display: flex; 
+  flex-direction: column; 
+  box-shadow: 0 8px 32px rgba(0,0,0,.5); 
+  z-index: 10; 
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* 拖曳把手區域 (列表標題 & 詳細照片區上方) */
+.drag-handle { 
+  cursor: grab; 
+  user-select: none; 
+  touch-action: none; 
+}
+.drag-handle:active { 
+  cursor: grabbing; 
+}
+
+@media (max-width:760px){
+  #panel{ 
+    top: auto; 
+    bottom: 75px; 
+    left: 12px; 
+    right: 12px; 
+    width: auto; 
+    max-width: none; 
+    height: 52vh; 
+    border-radius: 16px; 
+  }
+}
 
 .badge{background:var(--c,#000);color:#fff;font-size:.74rem;font-weight:700;padding:4px 10px;border-radius:999px;border:2px solid #fff;white-space:nowrap;cursor:pointer;box-shadow:0 1px 4px #0006}
 .badge.sel{background:#fff;color:var(--c);border-color:var(--c);transform:scale(1.15)}
 
-#lhead{padding:16px 16px 8px;flex:none}
+#lhead{padding:14px 16px 8px;flex:none}
 #lhead h1{font-size:1.1rem;margin:0 0 10px;font-weight:600}
 .filters{display:flex;flex-wrap:wrap;gap:6px}
 .filters button{border:1px solid var(--line);background:#0000;color:var(--text);border-radius:999px;padding:4px 11px;cursor:pointer;font-size:.78rem}
@@ -47,16 +88,16 @@ html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Pin
 .rinfo .d{color:var(--sub);font-size:.76rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 #detail{display:none;flex-direction:column;flex:1;min-height:0}
-.car{position:relative;height:200px;background:var(--hi);flex:none;display:flex;align-items:center;justify-content:center;color:var(--sub)}
+.car{position:relative;height:180px;background:var(--hi);flex:none;display:flex;align-items:center;justify-content:center;color:var(--sub)}
 .car img{width:100%;height:100%;object-fit:cover;display:none;position:absolute;top:0;left:0}
 .car img.on{display:block}
-.car .x{position:absolute;top:10px;right:10px;background:#000a;color:#fff;border:0;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;z-index:10}
+.car .x{position:absolute;top:10px;right:10px;background:#000a;color:#fff;border:0;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1rem;z-index:10}
 .car .nav{position:absolute;top:50%;transform:translateY(-50%);background:#0007;color:#fff;border:0;width:30px;height:30px;border-radius:50%;cursor:pointer;z-index:10}
 .car .prev{left:8px}.car .next{right:8px}
 .dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:5px;z-index:10}
 .dots span{width:6px;height:6px;border-radius:50%;background:#fff6;cursor:pointer}
 .dots span.on{background:#fff}
-#dbody{padding:14px 16px;overflow-y:auto;flex:1}
+#dbody{padding:12px 16px;overflow-y:auto;flex:1}
 #dbody .t{font-size:1.05rem;font-weight:700;margin-bottom:3px}
 #dbody .m{color:var(--sub);font-size:.82rem;margin-bottom:10px}
 .btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
@@ -64,7 +105,7 @@ html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Pin
 .btnrow a.sec{background:var(--hi);color:var(--text)}
 .lbl{color:var(--sub);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;margin:10px 0 4px}
 #dbody .d{font-size:.9rem;line-height:1.6;color:#e8eaed}
-#dfoot{flex:none;border-top:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;font-size:.8rem;color:var(--sub)}
+#dfoot{flex:none;border-top:1px solid var(--line);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;font-size:.8rem;color:var(--sub)}
 #dfoot button{background:none;border:0;color:var(--text);cursor:pointer;font-size:1.1rem;padding:2px 8px}
 
 /* Content Pages (Itinerary & Guide) */
@@ -97,12 +138,17 @@ html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Pin
 <!-- View 1: Photo Map -->
 <div id="view-map" class="view active" style="z-index: 10;">
   <div id="panel">
+    <!-- 列表模式的拖曳把手 -->
+    <div id="lhead" class="drag-handle" title="按住此處可拖曳視窗">
+      <h1>📸 羅浮敦最佳攝影地圖 <span style="font-size:0.75rem; color:var(--sub); float:right; margin-top:4px;">(可拖曳移動 ↕️)</span></h1>
+      <div class="filters" id="filters"></div>
+    </div>
     <div id="listview">
-      <div id="lhead"><h1>📸 羅浮敦最佳攝影地圖</h1><div class="filters" id="filters"></div></div>
       <div id="list"></div>
     </div>
     <div id="detail">
-      <div class="car" id="car">
+      <!-- 詳細模式的拖曳把手（相簿區上方） -->
+      <div class="car drag-handle" id="car" title="按住此處可拖曳視窗">
         <span class="placeholder-text">照片載入中...</span>
         <button class="x" onclick="closeDetail()">✕</button>
         <button class="nav prev" onclick="shiftPhoto(-1)">‹</button>
@@ -241,6 +287,68 @@ function switchTab(tabId) {
   document.getElementById('view-' + tabId).classList.add('active');
 }
 
+// --- 視窗自由拖曳移動機制 (支援滑鼠與手機觸控) ---
+(function initDraggablePanel() {
+  const panel = document.getElementById('panel');
+  let isDragging = false;
+  let startX, startY, initialLeft, initialTop;
+
+  function dragStart(e) {
+    // 確保點擊的是拖曳把手（標題列或照片區），而不是按鈕或捲軸
+    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.filters') || e.target.closest('#list') || e.target.closest('#dbody')) return;
+    
+    isDragging = true;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    startX = clientX;
+    startY = clientY;
+    
+    const rect = panel.getBoundingClientRect();
+    initialLeft = rect.left;
+    initialTop = rect.top;
+    
+    // 切換為絕對座標定位，方便自由拖動
+    panel.style.left = initialLeft + 'px';
+    panel.style.top = initialTop + 'px';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+
+    document.addEventListener('mousemove', dragMove);
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('touchmove', dragMove, { passive: false });
+    document.addEventListener('touchend', dragEnd);
+    if(e.type === 'touchstart') e.preventDefault();
+  }
+
+  function dragMove(e) {
+    if (!isDragging) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+    
+    panel.style.left = (initialLeft + dx) + 'px';
+    panel.style.top = (initialTop + dy) + 'px';
+    if(e.type === 'touchmove') e.preventDefault();
+  }
+
+  function dragEnd() {
+    isDragging = false;
+    document.removeEventListener('mousemove', dragMove);
+    document.removeEventListener('mouseup', dragEnd);
+    document.removeEventListener('touchmove', dragMove);
+    document.removeEventListener('touchend', dragEnd);
+  }
+
+  // 綁定到所有設定為拖曳把手的元素
+  document.querySelectorAll('.drag-handle').forEach(handle => {
+    handle.addEventListener('mousedown', dragStart);
+    handle.addEventListener('touchstart', dragStart, { passive: false });
+  });
+})();
+
 var API_KEY = "AIzaSyCmvtjSbkw19Opn37PfA--GzqJOcZkpBck";
 var DAYS={"4":"Day 4(10/15)","5":"Day 5(10/16)","6":"Day 6(10/17)","7":"Day 7(10/18)","8":"Day 8–9(10/19–10/20)"};
 var COL={"4":"#e6194b","5":"#f58231","6":"#3cb44b","7":"#4363d8","8":"#911eb4"};
@@ -290,7 +398,6 @@ function getKpDescription(kp) {
 
 var cachedKp = null;
 var kpFetchTime = 0;
-// 使用 swpc.noaa.gov 的純文字 RSS/JSON 接口（完全支援 HTTPS 跨域）
 async function fetchKpIndex() {
   const now = Date.now();
   if (cachedKp !== null && now - kpFetchTime < 300000) return cachedKp; 
@@ -309,7 +416,7 @@ async function fetchKpIndex() {
   } catch (e) {
     console.warn("Kp 讀取失敗，使用預設值", e);
   }
-  return 2.5; // 保底回傳 2.5 級，保證 GitHub 絕不破圖
+  return 2.5; 
 }
 
 async function fetchWeather(lat, lng) {
