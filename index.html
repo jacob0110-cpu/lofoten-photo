@@ -120,14 +120,47 @@ function getWeatherEmoji(code) {
   return "☁️";
 }
 
-// 修改：加入 daily=sunrise,sunset 並設定時區為 Europe/Oslo
+function getKpDescription(kp) {
+  if (kp >= 5) return "強烈 🤩 (極大機率爆發)";
+  if (kp >= 4) return "活躍 🌟 (肉眼明顯可見)";
+  if (kp >= 3) return "中等 ✨ (相機與肉眼可見)";
+  if (kp >= 2) return "微弱 (相機長曝光可見)";
+  return "平靜";
+}
+
+var cachedKp = null;
+var kpFetchTime = 0;
+// 強化 NOAA Kp API 讀取，並確保無論如何都會回傳結果
+async function fetchKpIndex() {
+  const now = Date.now();
+  if (cachedKp !== null && now - kpFetchTime < 300000) return cachedKp; 
+  try {
+    const res = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
+    if (!res.ok) throw new Error("NOAA 伺服器狀態異常");
+    const data = await res.json();
+    
+    // 安全地從陣列尾端找尋最新的有效數字
+    for(let i = data.length - 1; i >= 1; i--) {
+        const kpVal = parseFloat(data[i][1]);
+        if(!isNaN(kpVal)) {
+            cachedKp = kpVal;
+            kpFetchTime = now;
+            return kpVal;
+        }
+    }
+    return null;
+  } catch (e) {
+    console.warn("極光 Kp 指數讀取失敗", e);
+    return null; // 失敗時回傳 null
+  }
+}
+
 async function fetchWeather(lat, lng) {
   try {
     const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&daily=sunrise,sunset&timezone=Europe%2FOslo`);
     const data = await res.json();
     if (data.current_weather && data.daily) {
       const w = data.current_weather;
-      // 提取日出日落時間字串 (格式為 YYYY-MM-DDTHH:MM)
       const sunrise = data.daily.sunrise[0] ? data.daily.sunrise[0].split("T")[1] : "--:--";
       const sunset = data.daily.sunset[0] ? data.daily.sunset[0].split("T")[1] : "--:--";
       return `${getWeatherEmoji(w.weathercode)} · 氣溫 ${w.temperature}°C · 風速 ${w.windspeed} km/h\n🌅 日出 ${sunrise} · 🌇 日落 ${sunset}`;
@@ -208,12 +241,17 @@ async function openDetail(i){
   
   renderDetailShell(i);
   
-  var [d, weatherStr] = await Promise.all([
+  var [d, weatherStr, kp] = await Promise.all([
     loadFull(i),
-    fetchWeather(P[i].lat, P[i].lng)
+    fetchWeather(P[i].lat, P[i].lng),
+    fetchKpIndex()
   ]);
   
-  renderDetailFull(i, d, weatherStr);
+  // 保證一定會印出 Kp 資訊，如果 API 失敗也會顯示原因
+  var kpStr = kp !== null ? `\n🌌 極光 Kp 指數: ${kp.toFixed(1)} (${getKpDescription(kp)})` : "\n🌌 極光 Kp 指數: 暫時無法連線取得";
+  var fullEnvData = weatherStr + kpStr;
+
+  renderDetailFull(i, d, fullEnvData);
 }
 
 function renderDetailShell(i){
@@ -225,10 +263,10 @@ function renderDetailShell(i){
   document.getElementById("dbody").innerHTML=
     '<div class="t">'+esc(p.name)+'</div>'+
     '<div class="m">'+DAYS[p.day]+' · 景點資訊載入中…</div>'+
-    '<div class="m" style="color:var(--accent); font-weight:600; margin-top:-6px; margin-bottom:12px; white-space:pre-wrap; line-height:1.5;">天氣與日落讀取中…</div>';
+    '<div class="m" style="color:var(--accent); font-weight:600; margin-top:-6px; margin-bottom:12px; white-space:pre-wrap; line-height:1.5;">天氣與極光指數讀取中…</div>';
 }
 
-function renderDetailFull(i, d, weatherStr){
+function renderDetailFull(i, d, envDataStr){
   if(i!==curI)return;
   var p=P[i];
   var car=document.getElementById("car"),dots=document.getElementById("dots");
@@ -285,11 +323,10 @@ function renderDetailFull(i, d, weatherStr){
   var customLinkBtn = p.link ? '<a class="link-btn" href="'+p.link+'" target="_blank" rel="noopener">'+esc(p.linkText || '相關連結')+'</a>' : "";
   var fullDesc = p.detail || p.shortDesc;
 
-  // 使用 white-space:pre-wrap 讓文字中的 \n 能夠自動斷行
   document.getElementById("dbody").innerHTML=
     '<div class="t">'+esc(p.name)+'</div>'+
     '<div class="m">'+esc(meta.join(" · "))+'</div>'+
-    '<div class="m" style="color:var(--accent); font-weight:600; margin-top:-6px; margin-bottom:12px; white-space:pre-wrap; line-height:1.5;">'+esc(weatherStr)+'</div>'+
+    '<div class="m" style="color:var(--accent); font-weight:600; margin-top:-6px; margin-bottom:12px; white-space:pre-wrap; line-height:1.5;">'+esc(envDataStr)+'</div>'+
     '<div class="btnrow"><a href="'+dirUrl+'" target="_blank" rel="noopener">路線</a><a class="sec" href="'+mapsUrl+'" target="_blank" rel="noopener">地圖開啟</a>'+siteBtn+customLinkBtn+'</div>'+
     '<div class="lbl">拍攝重點與說明</div><div class="d">'+esc(fullDesc)+'</div>';
 }
