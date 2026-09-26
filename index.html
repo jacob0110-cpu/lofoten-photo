@@ -2,18 +2,34 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>羅浮敦島最佳拍照景點</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>羅浮敦至特羅姆瑟｜極致追光之旅</title>
 <style>
-:root{--panel:#1f2023f2;--text:#ececf1;--sub:#9aa0a6;--line:#3c4043;--hi:#33353a;--accent:#8ab4f8}
+:root{--panel:#1f2023f2;--text:#ececf1;--sub:#9aa0a6;--line:#3c4043;--hi:#33353a;--accent:#8ab4f8; --bg: #121212; --nav-h: 65px;}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif}
-#map{position:absolute;inset:0}
-#panel{position:absolute;top:16px;right:16px;bottom:16px;width:400px;max-width:calc(100vw - 32px);background:var(--panel);backdrop-filter:blur(6px);color:var(--text);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 4px 24px rgba(0,0,0,.35)}
+html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif; background: var(--bg); overflow: hidden;}
+
+/* Layout & Views */
+.view { position: absolute; top: 0; left: 0; right: 0; bottom: var(--nav-h); overflow-y: auto; display: none; background: var(--bg); color: var(--text); }
+.view.active { display: block; }
+#view-map.active { display: block; background: transparent; }
+
+/* Bottom Navigation */
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-h); background: #1a1a1dbf; backdrop-filter: blur(10px); border-top: 1px solid var(--line); display: flex; justify-content: space-around; align-items: center; z-index: 9999; padding-bottom: env(safe-area-inset-bottom); }
+.nav-btn { background: none; border: none; color: var(--sub); font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; flex: 1; padding: 10px 0; transition: color 0.2s; }
+.nav-btn i { font-size: 1.2rem; font-style: normal; }
+.nav-btn.active { color: var(--accent); font-weight: 600; }
+
+/* Map View Styles */
+#map { position: absolute; inset: 0; z-index: 0; }
+#panel { position: absolute; top: 16px; right: 16px; bottom: 16px; width: 400px; max-width: calc(100vw - 32px); background: var(--panel); backdrop-filter: blur(8px); color: var(--text); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 24px rgba(0,0,0,.4); z-index: 10; }
+@media (max-width:760px){#panel{top: auto; bottom: 16px; left: 16px; right: 16px; width: auto; max-width: none; height: 50%; border-radius: 16px;}}
+
 .badge{background:var(--c,#000);color:#fff;font-size:.74rem;font-weight:700;padding:4px 10px;border-radius:999px;border:2px solid #fff;white-space:nowrap;cursor:pointer;box-shadow:0 1px 4px #0006}
 .badge.sel{background:#fff;color:var(--c);border-color:var(--c);transform:scale(1.15)}
+
 #lhead{padding:16px 16px 8px;flex:none}
-#lhead h1{font-size:1.15rem;margin:0 0 10px;font-weight:600}
+#lhead h1{font-size:1.1rem;margin:0 0 10px;font-weight:600}
 .filters{display:flex;flex-wrap:wrap;gap:6px}
 .filters button{border:1px solid var(--line);background:#0000;color:var(--text);border-radius:999px;padding:4px 11px;cursor:pointer;font-size:.78rem}
 .filters button.on{color:#fff;background:var(--c,#555);border-color:transparent}
@@ -29,8 +45,9 @@ html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Pin
 .rinfo .t{font-weight:600;font-size:.88rem;margin-bottom:1px}
 .rinfo .m{color:var(--sub);font-size:.74rem;margin-bottom:2px}
 .rinfo .d{color:var(--sub);font-size:.76rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
 #detail{display:none;flex-direction:column;flex:1;min-height:0}
-.car{position:relative;height:220px;background:var(--hi);flex:none;display:flex;align-items:center;justify-content:center;color:var(--sub)}
+.car{position:relative;height:200px;background:var(--hi);flex:none;display:flex;align-items:center;justify-content:center;color:var(--sub)}
 .car img{width:100%;height:100%;object-fit:cover;display:none;position:absolute;top:0;left:0}
 .car img.on{display:block}
 .car .x{position:absolute;top:10px;right:10px;background:#000a;color:#fff;border:0;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;z-index:10}
@@ -43,44 +60,187 @@ html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Pin
 #dbody .t{font-size:1.05rem;font-weight:700;margin-bottom:3px}
 #dbody .m{color:var(--sub);font-size:.82rem;margin-bottom:10px}
 .btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-.btnrow a{background:var(--accent);color:#111;font-weight:600;text-decoration:none;padding:8px 16px;border-radius:20px;font-size:.85rem}
+.btnrow a{background:var(--accent);color:#111;font-weight:600;text-decoration:none;padding:6px 14px;border-radius:20px;font-size:.8rem}
 .btnrow a.sec{background:var(--hi);color:var(--text)}
-.btnrow a.link-btn{background:#4285f4;color:#fff}
 .lbl{color:var(--sub);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;margin:10px 0 4px}
 #dbody .d{font-size:.9rem;line-height:1.6;color:#e8eaed}
 #dfoot{flex:none;border-top:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;font-size:.8rem;color:var(--sub)}
 #dfoot button{background:none;border:0;color:var(--text);cursor:pointer;font-size:1.1rem;padding:2px 8px}
-.attr{padding:8px 16px;font-size:.7rem;color:var(--sub);text-align:right;flex:none}
-#err{display:none;padding:16px;color:#f28b82;position:relative;z-index:2}
-@media (max-width:760px){#panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:none;height:55%;border-radius:16px 16px 0 0}}
+
+/* Content Pages (Itinerary & Guide) */
+.page-container { padding: 20px; max-width: 800px; margin: 0 auto; padding-bottom: 40px; }
+.page-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; border-bottom: 2px solid var(--line); padding-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.timeline-card { background: var(--panel); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.2); border-left: 4px solid var(--c, var(--accent)); }
+.t-date { font-weight: 700; font-size: 1.1rem; margin-bottom: 8px; color: #fff; }
+.t-item { display: flex; margin-bottom: 10px; align-items: flex-start; }
+.t-time { flex: none; font-size: 0.8rem; background: var(--hi); color: var(--accent); padding: 2px 6px; border-radius: 4px; margin-right: 10px; font-weight: 600; margin-top: 2px; }
+.t-desc { font-size: 0.9rem; line-height: 1.5; color: #d1d5db; }
+.t-desc strong { color: #fff; }
+.tip-box { background: rgba(138, 180, 248, 0.1); border: 1px solid rgba(138, 180, 248, 0.3); border-radius: 8px; padding: 12px; margin-top: 8px; font-size: 0.85rem; line-height: 1.5; color: #e8eaed; }
+.tip-box span { display: block; color: var(--accent); font-weight: 700; margin-bottom: 4px; }
+.guide-section { margin-bottom: 24px; }
+.guide-section h3 { font-size: 1.1rem; margin-bottom: 12px; color: #fff; display: flex; align-items: center; gap: 8px; }
+.guide-list { list-style: none; padding: 0; margin: 0; }
+.guide-list li { background: var(--panel); margin-bottom: 8px; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; line-height: 1.5; color: #d1d5db; display: flex; gap: 12px; align-items: center;}
+.guide-list li i { font-size: 1.2rem; flex: none; }
+
+#err{display:none;padding:16px;background:#ff5252;color:#fff;position:fixed;top:0;left:0;right:0;z-index:9999;text-align:center;}
 </style>
 </head>
 <body>
-<div id="map"></div>
-<div id="panel">
-  <div id="listview">
-    <div id="lhead"><h1>羅浮敦島最佳拍照景點</h1><div class="filters" id="filters"></div></div>
-    <div id="list"></div>
-  </div>
-  <div id="detail">
-    <div class="car" id="car">
-      <span class="placeholder-text">照片載入中...</span>
-      <button class="x" onclick="closeDetail()">✕</button>
-      <button class="nav prev" onclick="shiftPhoto(-1)">‹</button>
-      <button class="nav next" onclick="shiftPhoto(1)">›</button>
-      <div class="dots" id="dots"></div>
+
+<!-- Map View -->
+<div id="map-wrapper" style="position:absolute; inset:0; z-index:0;">
+  <div id="map"></div>
+</div>
+
+<!-- View 1: Photo Map -->
+<div id="view-map" class="view active" style="z-index: 10;">
+  <div id="panel">
+    <div id="listview">
+      <div id="lhead"><h1>📸 羅浮敦最佳攝影地圖</h1><div class="filters" id="filters"></div></div>
+      <div id="list"></div>
     </div>
-    <div id="dbody"></div>
-    <div id="dfoot">
-      <button onclick="shiftPlace(-1)">←</button>
-      <span id="pcount"></span>
-      <button onclick="shiftPlace(1)">→</button>
+    <div id="detail">
+      <div class="car" id="car">
+        <span class="placeholder-text">照片載入中...</span>
+        <button class="x" onclick="closeDetail()">✕</button>
+        <button class="nav prev" onclick="shiftPhoto(-1)">‹</button>
+        <button class="nav next" onclick="shiftPhoto(1)">›</button>
+        <div class="dots" id="dots"></div>
+      </div>
+      <div id="dbody"></div>
+      <div id="dfoot">
+        <button onclick="shiftPlace(-1)">←</button>
+        <span id="pcount"></span>
+        <button onclick="shiftPlace(1)">→</button>
+      </div>
     </div>
-    <div class="attr">地圖資料 © Google</div>
   </div>
 </div>
+
+<!-- View 2: Itinerary -->
+<div id="view-itinerary" class="view" style="z-index: 20;">
+  <div class="page-container">
+    <div class="page-title">📅 每日行程總覽</div>
+
+    <div class="timeline-card" style="--c: #e6194b;">
+      <div class="t-date">10/15（四）｜ 初登場：啟航迎向極光島嶼</div>
+      <div class="t-item"><div class="t-time">16:45</div><div class="t-desc"><strong>海路啟航</strong>：於博多（Bodø）碼頭搭乘 Torghatten 渡輪前往 Moskenes。</div></div>
+      <div class="tip-box"><span>💡 追光祕技</span>此季節開船後不久天色便會全黑。若當晚晴朗且 Kp 指數好，請直接走到渡輪甲板上，有機會迎來海上的第一道極光！</div>
+      <div class="t-item" style="margin-top:10px;"><div class="t-time">20:15</div><div class="t-desc"><strong>抵達羅弗敦</strong>：渡輪靠岸 Moskenes，取車後沿 E10 向南開車約 10 分鐘，抵達 Sørvågen。</div></div>
+      <div class="t-item"><div class="t-time">21:00</div><div class="t-desc"><strong>夜宿漁屋</strong>：入住 The Tide - Rorbuer（連續入住 2 晚）。</div></div>
+      <div class="t-item"><div class="t-time">21:30</div><div class="t-desc"><strong>澎湃晚餐</strong>：於附設的 Restaurant Havet 享用暖胃晚餐。</div></div>
+    </div>
+
+    <div class="timeline-card" style="--c: #f58231;">
+      <div class="t-date">10/16（五）｜ 南部經典：明信片漁村與極光階梯</div>
+      <div class="t-item"><div class="t-time">白天</div><div class="t-desc"><strong>經典雷訥與奧鎮</strong>：漫步最南端 Å 奧鎮，品嚐肉桂捲。前往經典 Reinehalsen 觀景點拍攝群山漁屋大景。</div></div>
+      <div class="t-item"><div class="t-time">健行</div><div class="t-desc"><strong>Reinebringen 挑戰</strong>：來回約 2.5 小時，1978階登頂俯瞰雷訥峽灣。</div></div>
+      <div class="tip-box"><span>⚠️ 安全鐵律</span>中午前打開 Yr.no。若當天下雨、大霧、強風（>10 m/s）或地表低於 1°C，請果斷放棄不登頂。</div>
+      <div class="t-item" style="margin-top:10px;"><div class="t-time">深夜</div><div class="t-desc"><strong>漁屋極光構圖</strong>：開車至雷訥與哈姆島周邊，以巨岩與紅綠漁屋為前景，等待極光。</div></div>
+    </div>
+
+    <div class="timeline-card" style="--c: #3cb44b;">
+      <div class="t-date">10/17（六）｜ 前進中部：平緩金黃步道與搖滾區海灘</div>
+      <div class="t-item"><div class="t-time">10:00</div><div class="t-desc"><strong>向北推進</strong>：退房沿 E10 北上，停靠 Flakstad 教堂沙灘與 Ramberg 白沙灘。</div></div>
+      <div class="t-item"><div class="t-time">13:00</div><div class="t-desc"><strong>高 CP 值中部步道 (二選一)</strong>：<br>A: Nonstinden / Ballstadheia（鳥瞰 Ballstad 港口秋色）<br>B: Offersøykammen（俯瞰 E10 大橋跨越蔚藍峽灣）</div></div>
+      <div class="t-item"><div class="t-time">15:00</div><div class="t-desc"><strong>碼頭公寓入住</strong>：入住 Solsiden Brygge（巴爾斯塔碼頭）。</div></div>
+      <div class="t-item"><div class="t-time">21:00</div><div class="t-desc"><strong>無光害沙灘追光</strong>：開車前往 Uttakleiv 或是 Haukland Beach，面向毫無遮蔽的北方大海，是極光倒影絕對搖滾區。</div></div>
+    </div>
+
+    <div class="timeline-card" style="--c: #4363d8;">
+      <div class="t-date">10/18（日）｜ 世界奇景：藝術漁村與跨夜極光郵輪</div>
+      <div class="t-item"><div class="t-time">10:00</div><div class="t-desc"><strong>北上中繼站</strong>：Rørvikstranda 豆腐岩海岸臨停休息。</div></div>
+      <div class="t-item"><div class="t-time">11:15</div><div class="t-desc"><strong>北方威尼斯</strong>：造訪 Henningsvær。拍攝島嶼足球場，參觀 KaviarFactory 藝術館。行經 816 單線道拱橋請注意會車。</div></div>
+      <div class="t-item"><div class="t-time">16:00</div><div class="t-desc"><strong>市區還車</strong>：前往 Svolvær，於暮色中辦理還車。</div></div>
+      <div class="t-item"><div class="t-time">18:00</div><div class="t-desc"><strong>港畔大餐</strong>：拉行李至碼頭區，於 Børsen Spiseri 享用晚餐（船上深夜無正餐務必吃飽）。</div></div>
+      <div class="t-item"><div class="t-time">22:15</div><div class="t-desc"><strong>登 Havila 郵輪</strong>：MS Havila Polaris 跨夜航行。</div></div>
+      <div class="tip-box"><span>💡 追光祕技</span>登船安頓後立刻衝上頂層甲板。在幾乎零光害的北冰洋上仰望璀璨極光，將是整趟最震撼的一晚。</div>
+    </div>
+
+    <div class="timeline-card" style="--c: #911eb4;">
+      <div class="t-date">10/19（一）｜ 北極之門：纜車俯瞰萬家燈火</div>
+      <div class="t-item"><div class="t-time">14:15</div><div class="t-desc"><strong>抵達特羅姆瑟</strong>：郵輪靠岸，步行入住市區公寓 Skaret by VANDER，換上最禦寒衣物。</div></div>
+      <div class="t-item"><div class="t-time">17:15</div><div class="t-desc"><strong>Fjellheisen 纜車</strong>：從 Torgsenteret 搭 26 號公車直達纜車站，趕在日落前上山。</div></div>
+      <div class="t-item"><div class="t-time">18:00</div><div class="t-desc"><strong>城市夜景定點追光</strong>：鳥瞰特羅姆瑟大橋與萬家燈火。</div></div>
+      <div class="tip-box"><span>💡 追光祕技</span>山頂風極大！請坐在 Fjellstua 景觀餐廳室內喝熱飲，透過大落地窗監看天空，發現綠光再推門出去拍，免受寒風吹。</div>
+      <div class="tip-box"><span>☔ 彈性備案</span>若當晚市區厚雲，可與隔天傍晚行程對調，或臨時報名極光巴士團，由專業嚮導破雲去邊境尋找晴空。</div>
+    </div>
+
+    <div class="timeline-card" style="--c: #911eb4;">
+      <div class="t-date">10/20（二）｜ 市區悠閒：博物館、冰酒吧與地標</div>
+      <div class="t-item"><div class="t-time">10:00</div><div class="t-desc"><strong>歷史漫步</strong>：Storgata 步行街、特羅姆瑟大教堂、The Polar Museum (極地博物館)。</div></div>
+      <div class="t-item"><div class="t-time">12:30</div><div class="t-desc"><strong>肉桂捲時光</strong>：Prostneset 港口邊咖啡廳享用 Kanelbolle 搭配黑咖啡。</div></div>
+      <div class="t-item"><div class="t-time">14:00</div><div class="t-desc"><strong>跨越北極圈大橋</strong>：步行 1 公里 Tromsø Bridge，參觀對岸前衛的 Arctic Cathedral (北極大教堂)。</div></div>
+      <div class="t-item"><div class="t-time">16:30</div><div class="t-desc"><strong>北極獨特體驗</strong>：造訪 Magic Ice Bar 冰酒吧。</div></div>
+      <div class="t-item"><div class="t-time">19:00</div><div class="t-desc"><strong>畢業大餐</strong>：Emma's Drømmekjøkken 品嚐北極紅點鮭或馴鹿肉排。</div></div>
+    </div>
+
+    <div class="timeline-card" style="--c: #911eb4;">
+      <div class="t-date">10/21（三）｜ 珍重再見：滿載極光回憶返航</div>
+      <div class="t-item"><div class="t-time">上午</div><div class="t-desc"><strong>前往機場</strong>：退房。在 Torgsenteret 搭乘 40 或 42 號公車（約 20 分鐘）直達特羅姆瑟機場 (TOS) 搭機。</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- View 3: Guide -->
+<div id="view-guide" class="view" style="z-index: 20;">
+  <div class="page-container">
+    <div class="page-title">💡 實用指南與注意事項</div>
+    
+    <div class="guide-section">
+      <h3>🚗 租車與自駕安全</h3>
+      <ul class="guide-list">
+        <li><i>❄️</i><div><strong>輪胎確認：</strong>10 月中旬隨時有黑冰風險。10/15 取車務必確認已更換為「冬季摩擦胎」或「帶釘胎 (Studded tires)」。</div></li>
+        <li><i>🌉</i><div><strong>單線橋樑：</strong>遇到單線道橋樑或狹窄隧道，請留意「Ｍ」標誌避車彎，禮讓對向來車。</div></li>
+      </ul>
+    </div>
+
+    <div class="guide-section">
+      <h3>📱 必裝實用 App</h3>
+      <ul class="guide-list">
+        <li><i>🅿️</i><div><strong>EasyPark：</strong>羅浮敦與特羅姆瑟各景點、沙灘的停車費線上刷卡必備。</div></li>
+        <li><i>🚌</i><div><strong>Troms Billett：</strong>特羅姆瑟市區購買公車單程票或一日票（比上車買便宜）。</div></li>
+        <li><i>🌤️</i><div><strong>Yr.no：</strong>挪威最準確的官方氣象預報，健行前必查。</div></li>
+      </ul>
+    </div>
+
+    <div class="guide-section">
+      <h3>🧣 洋蔥式保暖穿搭 (體感 5°C ~ -5°C)</h3>
+      <ul class="guide-list">
+        <li><i>🧥</i><div><strong>外層：</strong>防風防水外套 (如 Gore-Tex)。</div></li>
+        <li><i>🧥</i><div><strong>中層：</strong>羽絨衣 或 厚保暖刷毛。</div></li>
+        <li><i>👕</i><div><strong>內層：</strong>吸濕排汗發熱衣。</div></li>
+        <li><i>🧤</i><div><strong>配件：</strong>保暖毛帽、防風觸控手套、羊毛厚襪、防水深齒痕防滑靴。</div></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Navigation Bar -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchTab('map')">
+    <i>📸</i><span>攝影地圖</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('itinerary')">
+    <i>📅</i><span>每日行程</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('guide')">
+    <i>💡</i><span>實用指南</span>
+  </button>
+</nav>
+
 <div id="err"></div>
+
 <script>
+function switchTab(tabId) {
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+  document.getElementById('view-' + tabId).classList.add('active');
+}
+
 var API_KEY = "AIzaSyCmvtjSbkw19Opn37PfA--GzqJOcZkpBck";
 var DAYS={"4":"Day 4(10/15)","5":"Day 5(10/16)","6":"Day 6(10/17)","7":"Day 7(10/18)","8":"Day 8–9(10/19–10/20)"};
 var COL={"4":"#e6194b","5":"#f58231","6":"#3cb44b","7":"#4363d8","8":"#911eb4"};
@@ -130,28 +290,34 @@ function getKpDescription(kp) {
 
 var cachedKp = null;
 var kpFetchTime = 0;
-// 強化 NOAA Kp API 讀取，並確保無論如何都會回傳結果
+// 改用 GFZ 德國地磁研究中心公開 API，完美支援跨域 (CORS) 且穩定
 async function fetchKpIndex() {
   const now = Date.now();
   if (cachedKp !== null && now - kpFetchTime < 300000) return cachedKp; 
   try {
-    const res = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
-    if (!res.ok) throw new Error("NOAA 伺服器狀態異常");
+    const res = await fetch("https://kp.gfz-potsdam.de/app/json/");
+    if (!res.ok) throw new Error("GFZ 伺服器狀態異常");
     const data = await res.json();
-    
-    // 安全地從陣列尾端找尋最新的有效數字
-    for(let i = data.length - 1; i >= 1; i--) {
-        const kpVal = parseFloat(data[i][1]);
-        if(!isNaN(kpVal)) {
-            cachedKp = kpVal;
-            kpFetchTime = now;
-            return kpVal;
-        }
+    // 取得陣列中的最新一筆 Kp 數值
+    if (data && data.datetime && data.datetime.length > 0) {
+      const latestKp = parseFloat(data.kp[data.kp.length - 1]);
+      if (!isNaN(latestKp)) {
+        cachedKp = latestKp;
+        kpFetchTime = now;
+        return latestKp;
+      }
     }
     return null;
   } catch (e) {
-    console.warn("極光 Kp 指數讀取失敗", e);
-    return null; // 失敗時回傳 null
+    console.warn("極光 Kp 指數讀取失敗，改用備用源", e);
+    // 備用方案：若 GFZ 失敗則嘗試通用代理接口
+    try {
+      const res2 = await fetch("https://services.swpc.noaa.gov/products/noaus-planetary-k-index.json");
+      const data2 = await res2.json();
+      const kpVal = parseFloat(data2[data2.length - 1][1]);
+      if (!isNaN(kpVal)) { cachedKp = kpVal; return kpVal; }
+    } catch(err) {}
+    return null; 
   }
 }
 
@@ -247,7 +413,6 @@ async function openDetail(i){
     fetchKpIndex()
   ]);
   
-  // 保證一定會印出 Kp 資訊，如果 API 失敗也會顯示原因
   var kpStr = kp !== null ? `\n🌌 極光 Kp 指數: ${kp.toFixed(1)} (${getKpDescription(kp)})` : "\n🌌 極光 Kp 指數: 暫時無法連線取得";
   var fullEnvData = weatherStr + kpStr;
 
